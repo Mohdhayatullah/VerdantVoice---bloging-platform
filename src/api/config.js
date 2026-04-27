@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const BASE_URL = 'http://localhost:1000/blogs/v1.0';
+export const BASE_URL = 'https://blogsbackend-3g0m.onrender.com/blogs/v1.0';
 
 const api = axios.create({ baseURL: BASE_URL });
 
