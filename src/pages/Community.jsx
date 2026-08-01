@@ -6,14 +6,25 @@ import toast from 'react-hot-toast';
 
 export default function Community() {
   const { isLoggedIn, user } = useAuth();
-  const [blogs,    setBlogs]    = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [search,   setSearch]   = useState('');
+  const [blogs, setBlogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
   const [followed, setFollowed] = useState(new Set());
 
   useEffect(() => {
-    getAllBlogs().then(r => { setBlogs(r.data||[]); setLoading(false); }).catch(()=>setLoading(false));
-  }, []);
+    getAllBlogs()
+      .then(r => {
+        const blogList = Array.isArray(r.data) ? r.data : [];
+        setBlogs(blogList);
+        setFollowed(new Set(
+          blogList
+            .filter(blog => blog.followingAuthor && blog.userId && (!user || blog.userId !== user.id))
+            .map(blog => blog.userId)
+        ));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [user]);
 
   const writers = useMemo(() => {
     const map = {};
@@ -42,14 +53,19 @@ export default function Community() {
     if (!isLoggedIn) { toast.error('Sign in to follow writers'); return; }
     const isF = followed.has(wId);
     try {
-      if (isF) { await unfollowUser(wId); setFollowed(s=>{const n=new Set(s);n.delete(wId);return n;}); toast.success('Unfollowed'); }
-      else      { await followUser(wId);   setFollowed(s=>new Set([...s,wId]));                           toast.success('Following! 🌿'); }
+      const res = isF ? await unfollowUser(wId) : await followUser(wId);
+      setFollowed(s => {
+        const next = new Set(s);
+        if (res.data?.following) next.add(wId);
+        else next.delete(wId);
+        return next;
+      });
+      toast.success(res.data?.message || (isF ? 'Unfollowed' : 'Following! 🌿'));
     } catch(e) { toast.error(e.message); }
   };
 
   return (
     <div className="page-fade">
-      {/* Hero */}
       <div style={{ background:'linear-gradient(145deg,var(--green-900),var(--green-700))', padding:'130px clamp(16px,5vw,60px) 80px', textAlign:'center' }}>
         <h1 style={{ color:'#fff', marginBottom:14 }}>Our Community</h1>
         <p style={{ color:'var(--green-200)', fontSize:'1.1rem', maxWidth:560, margin:'0 auto 36px' }}>Connect with passionate writers and curious readers from around the world.</p>
@@ -65,8 +81,6 @@ export default function Community() {
 
       <div style={{ maxWidth:1100, margin:'0 auto', padding:'clamp(48px,6vw,96px) clamp(16px,5vw,60px)' }}>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 360px', gap:40 }} className="community-grid">
-
-          {/* Writers */}
           <div>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:28, flexWrap:'wrap', gap:12 }}>
               <div style={{ fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--ink-400)' }}>Featured Writers</div>
@@ -80,7 +94,7 @@ export default function Community() {
             : !filtered.length ? <div className="empty-state"><div className="empty-icon">👥</div><h3>No writers found</h3></div>
             : filtered.map(w => {
               const isOwn = user && user.id === w.id;
-              const isF   = followed.has(w.id);
+              const isF = followed.has(w.id);
               return (
                 <div key={w.id} style={{ background:'#fff', borderRadius:'var(--radius-lg)', border:'1px solid var(--ink-100)', padding:'20px 24px', display:'flex', gap:16, alignItems:'flex-start', marginBottom:14, boxShadow:'var(--shadow-xs)', transition:'all 0.25s' }}
                   onMouseEnter={e=>{e.currentTarget.style.boxShadow='var(--shadow-md)';e.currentTarget.style.borderColor='var(--green-200)';e.currentTarget.style.transform='translateY(-2px)'}}
@@ -109,9 +123,7 @@ export default function Community() {
             })}
           </div>
 
-          {/* Sidebar */}
           <div style={{ position:'sticky', top:90, height:'fit-content', display:'flex', flexDirection:'column', gap:24 }}>
-            {/* Trending */}
             <div style={{ background:'#fff', borderRadius:'var(--radius-lg)', border:'1px solid var(--ink-100)', padding:26, boxShadow:'var(--shadow-xs)' }}>
               <div style={{ fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--ink-400)', marginBottom:18 }}>🔥 Trending Articles</div>
               {trending.length === 0 ? <p style={{ color:'var(--ink-400)', fontSize:'0.85rem' }}>No articles yet.</p>
@@ -128,7 +140,6 @@ export default function Community() {
               ))}
             </div>
 
-            {/* Hot tags */}
             <div style={{ background:'#fff', borderRadius:'var(--radius-lg)', border:'1px solid var(--ink-100)', padding:26, boxShadow:'var(--shadow-xs)' }}>
               <div style={{ fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--ink-400)', marginBottom:18 }}>🏷 Popular Tags</div>
               <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
@@ -143,7 +154,6 @@ export default function Community() {
               </div>
             </div>
 
-            {/* CTA */}
             <div style={{ background:'linear-gradient(135deg,var(--green-800),var(--green-900))', borderRadius:'var(--radius-lg)', padding:28, textAlign:'center' }}>
               <div style={{ fontSize:'2.5rem', marginBottom:12 }}>✍️</div>
               <h3 style={{ color:'#fff', fontFamily:'var(--font-display)', marginBottom:10, fontSize:'1.3rem' }}>Start Writing Today</h3>

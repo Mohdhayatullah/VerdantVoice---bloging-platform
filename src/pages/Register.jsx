@@ -22,7 +22,9 @@ export default function Register() {
       await registerApi({ fullName, email, password, phoneNumber });
       toast.success('Account created! Please sign in 🌿');
       navigate('/login');
-    } catch (err) { setError(err.message); }
+    } catch (err) { 
+      console.log(err.message)
+      setError(err.message); }
     finally { setLoading(false); }
   };
 
