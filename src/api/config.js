@@ -11,7 +11,7 @@ const extractErrorMessage = (payload, fallback = 'Something went wrong') => {
   }
 
   if (typeof payload === 'string') {
-    const looksLikeHtml = /<html|<body|<head|whitelabel/i.test(payload);
+    const looksLikeHtml = /<html|<body|<head|whitelabel/i.test(payload); 
     if (looksLikeHtml) {
       return fallback;
     }
